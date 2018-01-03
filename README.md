@@ -1,5 +1,7 @@
 # Water-Shader
 
+Simulate ocean surface using GLSL shader 
+
 ## Installation and Building
 
 ```bash
