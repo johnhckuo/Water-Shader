@@ -2,6 +2,7 @@ var camera, scene, renderer;
 var geometry, material, mesh;
 var light_source = new THREE.Vector3(0.70707, 0.70707, 0.7);
 var water_color = new THREE.Vector3(0.109, 0.419, 0.627);
+var imgUrl = "https://raw.githubusercontent.com/jbouny/ocean/master/demo/assets/img";
 
 var time = new THREE.Clock();
 var width = 5000, height = 5000;
@@ -23,14 +24,14 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x000000 );
 
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000000);
   camera.position.set(-1000, 700, -1000);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new THREE.OrbitControls( camera, renderer.domElement );
 
-  var directionalLight = new THREE.DirectionalLight(0xffff55, 1);
-  directionalLight.position.set(-600, 300, 600);
+  var directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(-100, 100, 100);
   scene.add(directionalLight);
 
   var plane_geometry = new THREE.PlaneBufferGeometry( width, height, 32 );
@@ -40,7 +41,7 @@ function init() {
       textureHeight: 256,
       // waterNormals: waterNormals,
       alpha:  1.0,
-      sunDirection: directionalLight.position.normalize(),
+      sunDirection: light_source.normalize(),
       sunColor: 0xffffff,
       waterColor: 0x001e0f,
       betaVersion: 0,
@@ -51,14 +52,14 @@ function init() {
   surface = new THREE.Mesh( plane_geometry, ms_Water.material );
   surface.add(ms_Water);
 
-	surface.position.set(0,0,0);
+  surface.position.set(0,0,0);
   surface.rotation.x = Math.PI*0.5;
 
-	scene.add( surface );
+  scene.add( surface );
 
   // Update the render target cube
 
-  var skyGeometry = new THREE.BoxGeometry( width, width, width );
+  var skyGeometry = new THREE.BoxGeometry( 100000, 100000, 100000 );
   THREE.TextureLoader.prototype.crossOrigin = '';
   var loader = new THREE.TextureLoader();
   var materialArray = [
@@ -77,7 +78,6 @@ function init() {
   var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
   scene.add( skyBox );
 
-  //scene.fog = new THREE.Fog(0xffffff,0,width*(3/4));
   /////////
   //panel//
   /////////
@@ -96,8 +96,8 @@ function init() {
 
   });
 
-  var meshMaterial = new THREE.MeshBasicMaterial({ color: 0xFF00FF, wireframe: false });
-  var sphere = new THREE.Mesh( new THREE.SphereGeometry( 500 ), meshMaterial );
+  var meshMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color(1, 1, 1), wireframe: false });
+  sphere = new THREE.Mesh( new THREE.SphereGeometry( 200, 200, 64 ), meshMaterial );
   sphere.position.set(0, 800, 0);
   scene.add( sphere );
 
@@ -114,6 +114,12 @@ function animate() {
   ms_Water.render();
   ms_Water.material.uniforms.u_time.value += deltaTime;
 
+  var timer = Date.now() * 0.0005;
+
+  sphere.position.y = Math.abs(Math.sin(timer)) * 1000;
+  //sphere.position.z = Math.cos(timer) * 1000;
+
+  sphere.material.color = new THREE.Color(Math.sin(deltaTime), Math.cos(deltaTime), 1);
   renderer.render(scene, camera);
   controls.update();
 
