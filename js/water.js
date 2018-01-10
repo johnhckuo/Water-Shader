@@ -1,7 +1,7 @@
 /**
- * @author jbouny / https://github.com/jbouny
  *
  * Work based on :
+ * @author jbouny / https://github.com/jbouny
  * @author Slayvin / http://slayvin.net : Flat mirror for three.js
  * @author Stemkoski / http://www.adelphi.edu/~stemkoski : An implementation of water shader based on the flat mirror
  * @author Jonas Wagner / http://29a.ch/ && http://29a.ch/slides/2012/webglwater/ : Water shader explanations in WebGL
@@ -20,7 +20,12 @@ THREE.ShaderLib['water'] = {
       "sunColor":         { type: "c", value: new THREE.Color(0x7F7F7F) },
       "sunDirection":     { type: "v3", value: new THREE.Vector3(0.70707, 0.70707, 0) },
       "eye":              { type: "v3", value: new THREE.Vector3(0, 0, 0) },
-      "waterColor":       { type: "c", value: new THREE.Color(0x555555) }
+      "waterColor":       { type: "c", value: new THREE.Color(0x555555) },
+      "gridNumber" :   { type: "f", value: 20.0 },
+      "waveX":         { type: "f", value: 1.0 },
+      "waveY":     { type: "f", value: 2.0 },
+      "rippleX":              { type: "f", value: 3.0 },
+      "rippleY":       { type: "f", value: 5.0 }
     }
   ] ),
 
@@ -72,6 +77,11 @@ THREE.ShaderLib['water'] = {
     'uniform vec3 sunDirection;',
     'uniform sampler2D envMap;',
     'uniform vec3 sunColor;',
+    'uniform float gridNumber;',
+    'uniform float waveX;',
+    'uniform float waveY;',
+    'uniform float rippleX;',
+    'uniform float rippleY;',
 
     'varying vec2 uVu;',
     'varying vec3 vNormal;',
@@ -118,15 +128,17 @@ THREE.ShaderLib['water'] = {
     '  float frequency = 1.0;',
 
     '  float amplitude = 0.5;',
-    '  float lacunarity = 2.0;',
+    '  float lacunarity = 1.5;',
     '  float gain = 0.5;',
     '  for (int i = 0 ; i < octave ; i++){',
     '    result += amplitude*getNoise(st);',
     '    st *= lacunarity;',
     '    amplitude *= gain;',
     '  }',
-    '  return result;',
+    '  float n = 1. - abs(result);',
+    '  return n*n;',
     '}',
+
 
     'vec3 diffuseLight(float intensity, vec3 sunColor){',
     '  return vec3(max(dot(vNormal, normalize(sunDirection)), 0.0)*intensity)*sunColor;',
@@ -141,15 +153,21 @@ THREE.ShaderLib['water'] = {
 
 
     'void main() {',
-    'vec2 st = uVu.xy* 10.0;',
+    'vec2 st = uVu.xy* gridNumber;',
 
     'vec3 noise = vec3(0.0);',
 
-    'vec3 pos = vec3(st.x*5.0, st.y*5.0, u_time*0.4);',
-    'noise = vec3(fbm(pos) + 2.0);',
+    'vec3 pos = vec3(st.x*rippleX, st.y*rippleY, u_time*0.4);',
+    'noise = vec3(fbm(pos) + 1.0);',
 
-    'vec3 wave_pos = vec3(st.x*1.0 , st.y*2.0 + (u_time/2.0), u_time*0.3);',
-    'noise *= vec3(getNoise(wave_pos) + 2.0);',
+    'vec3 wave_pos = vec3(st.x*waveX , st.y*waveY + (u_time/2.0), u_time*0.3);',
+    'noise *= vec3(fbm(wave_pos)*1.5 + 0.5);',
+
+    // 'vec3 wave_pos2 = vec3(st.x*3.0 + (u_time/2.0) , st.y*5.0 + (u_time/2.0), u_time*0.3);',
+    // 'noise *= vec3(getNoise(wave_pos2) + 1.0);',
+
+    // 'vec3 wave_pos = vec3(st.x*2.0 , st.y*4.0 + (u_time/2.0), u_time*0.3);',
+    // 'noise *= vec3(getNoise(wave_pos) + 2.0);',
 
     'vec3 distortCoord = noise.x * surfaceX + noise.y * surfaceY;',
     'vec3 distortNormal = distortCoord + surfaceZ;',
@@ -159,7 +177,7 @@ THREE.ShaderLib['water'] = {
 
     'vec3 specular = vec3(0.0);',
     'vec3 diffuse = vec3(0.0);',
-    'specular += specularLight(distortNormal, eyeDirection, 0.8, 10.0, sunColor);',
+    'specular += specularLight(distortNormal, eyeDirection, 0.8, 20.0, sunColor);',
     'diffuse += diffuseLight(1.0, sunColor);',
     'noise *= (specular+diffuse);',
 
@@ -169,12 +187,12 @@ THREE.ShaderLib['water'] = {
     'vec3 reflectionSample = texture2DProj(envMap, mirrorDistord).xyz;',
 
     'vec3 oceanBlue = vec3(0.109, 0.419, 0.627);',
-    'oceanBlue = vec3(0.333, 0.4, 0.4);',
+    // 'oceanBlue = vec3(0.333, 0.4, 0.4);',
     'vec3 finalColor = oceanBlue * noise * 0.5;',
 
 
 
-     'gl_FragColor = vec4( reflectionSample*finalColor, 1.0);',
+     'gl_FragColor = vec4( reflectionSample*finalColor, alpha);',
 
 
     '}'
@@ -209,6 +227,11 @@ THREE.Water = function (renderer, camera, scene, options) {
   this.distortionScale = optionalParameter(options.distortionScale, 20.0);
   this.noiseScale = optionalParameter(options.noiseScale, 1.0);
   this.side = optionalParameter(options.side, THREE.FrontSide);
+  this.gridNumber = optionalParameter(options.gridNumber, 20.0);
+  this.waveX = optionalParameter(options.waveX, 1.0);
+  this.waveY = optionalParameter(options.waveY, 2.0);
+  this.rippleX = optionalParameter(options.rippleX, 3.0);
+  this.rippleY = optionalParameter(options.rippleY, 5.0);
   // this.fog = optionalParameter(options.fog, false);
   
   this.renderer = renderer;
@@ -316,6 +339,7 @@ THREE.Water.prototype.updateTextureMatrix = function () {
     this.normal.reflect(meshNormal);
   }
 
+  // calculate view vector
   var view = this.mesh.position.clone().sub(this.cameraWorldPosition);
   view.reflect(this.normal).negate();
   view.add(this.mesh.position);
@@ -330,6 +354,7 @@ THREE.Water.prototype.updateTextureMatrix = function () {
   target.reflect(this.normal).negate();
   target.add(this.mesh.position);
 
+  //this.up.set(0, 1, 0);
   this.up.set(0, -1, 0);
   this.up.applyMatrix4(this.rotationMatrix);
   this.up.reflect(this.normal).negate();
@@ -344,9 +369,11 @@ THREE.Water.prototype.updateTextureMatrix = function () {
   this.mirrorCamera.matrixWorldInverse.getInverse(this.mirrorCamera.matrixWorld);
 
   // Update the texture matrix
-  this.textureMatrix.set(0.5, 0.0, 0.0, 0.5,
-              0.0, 0.5, 0.0, 0.5,
-              0.0, 0.0, 0.5, 0.5,
+  var scalingFactor = 0.5;
+  var translatingFactor = 0.5;
+  this.textureMatrix.set(scalingFactor, 0.0, 0.0, translatingFactor,
+              0.0, scalingFactor, 0.0, translatingFactor,
+              0.0, 0.0, scalingFactor, translatingFactor,
               0.0, 0.0, 0.0, 1.0);
   this.textureMatrix.multiply(this.mirrorCamera.projectionMatrix);
   this.textureMatrix.multiply(this.mirrorCamera.matrixWorldInverse);

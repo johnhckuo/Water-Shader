@@ -1,8 +1,9 @@
 var camera, scene, renderer;
 var geometry, material, mesh;
-var light_source = new THREE.Vector3(0.70707, 0.70707, 0.7);
+var light_source = new THREE.Vector3(707.07, 707.07, 700);
 var water_color = new THREE.Vector3(0.109, 0.419, 0.627);
 var imgUrl = "https://raw.githubusercontent.com/jbouny/ocean/master/demo/assets/img";
+var tile = "../img/tile.jpg";
 
 var time = new THREE.Clock();
 var width = 5000, height = 5000;
@@ -24,17 +25,21 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x000000 );
 
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000000);
+  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 3000000);
   camera.position.set(-1000, 700, -1000);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new THREE.OrbitControls( camera, renderer.domElement );
 
   var directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(-100, 100, 100);
+  directionalLight.position = light_source;
+
+  var helper = new THREE.DirectionalLightHelper( directionalLight, 500 );
+
+  scene.add( helper );
   scene.add(directionalLight);
 
-  var plane_geometry = new THREE.PlaneBufferGeometry( width, height, 32 );
+  var plane_geometry = new THREE.PlaneBufferGeometry( width, height, 32, 32 );
 
   ms_Water = new THREE.Water(renderer, camera, scene, {
       textureWidth: 256,
@@ -59,19 +64,32 @@ function init() {
 
   // Update the render target cube
 
-  var skyGeometry = new THREE.BoxGeometry( 100000, 100000, 100000 );
+  // var skyGeometry = new THREE.BoxGeometry( 5000, 5000, 5000 );
+  var skyGeometry = new THREE.BoxGeometry( 10000, 10000, 10000 );
+
   THREE.TextureLoader.prototype.crossOrigin = '';
   var loader = new THREE.TextureLoader();
+  // var materialArray = [
+
+  //                 new THREE.MeshBasicMaterial( { map: loader.load( tile ) ,side: THREE.BackSide } ), // right
+  //                 new THREE.MeshBasicMaterial( { map: loader.load( tile ) ,side: THREE.BackSide } ), // left
+  //                 new THREE.MeshBasicMaterial( { map: loader.load( tile ) ,side: THREE.BackSide } ), // top
+  //                 new THREE.MeshBasicMaterial( { map: loader.load( tile ) ,side: THREE.BackSide } ), // bottom
+  //                 new THREE.MeshBasicMaterial( { map: loader.load( tile ) ,side: THREE.BackSide } ), // back
+  //                 new THREE.MeshBasicMaterial( { map: loader.load( tile ) ,side: THREE.BackSide } )  // front
+
+  //             ];
+
   var materialArray = [
 
-                  new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/px.jpg' ) ,side: THREE.DoubleSide } ), // right
-                  new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/nx.jpg' ) ,side: THREE.DoubleSide } ), // left
-                  new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/py.jpg' ) ,side: THREE.DoubleSide } ), // top
-                  new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/ny.jpg' ) ,side: THREE.DoubleSide } ), // bottom
-                  new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/pz.jpg' ) ,side: THREE.DoubleSide } ), // back
-                  new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/nz.jpg' ) ,side: THREE.DoubleSide } )  // front
+    new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/px.jpg' ) ,side: THREE.DoubleSide } ), // right
+    new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/nx.jpg' ) ,side: THREE.DoubleSide } ), // left
+    new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/py.jpg' ) ,side: THREE.DoubleSide } ), // top
+    new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/ny.jpg' ) ,side: THREE.DoubleSide } ), // bottom
+    new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/pz.jpg' ) ,side: THREE.DoubleSide } ), // back
+    new THREE.MeshBasicMaterial( { map: loader.load( imgUrl+'/nz.jpg' ) ,side: THREE.DoubleSide } )  // front
 
-              ];
+];
 
   var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
 
@@ -88,6 +106,12 @@ function init() {
 
   var params = {
       Wireframe : false,
+      WaveX : 1.0,
+      WaveY : 2.0,
+      RippleX : 3.0,
+      RippleY : 5.0,
+      Grid: 20.0
+
   };
 
   gui.add(params, 'Wireframe').onFinishChange(function(){
@@ -96,10 +120,29 @@ function init() {
 
   });
 
+  gui.add(params, 'Grid').min(0).max(50).step(0.5).onChange(function(){
+    ms_Water.material.uniforms.gridNumber.value = params.Grid;
+  });
+  gui.add(params, 'WaveX').min(0).max(10).step(0.5).onChange(function(){
+    ms_Water.material.uniforms.waveX.value = params.WaveX;
+  });
+  gui.add(params, 'WaveY').min(0).max(10).step(0.5).onChange(function(){
+    ms_Water.material.uniforms.waveY.value = params.WaveY;
+  });
+  gui.add(params, 'RippleX').min(0).max(10).step(0.5).onChange(function(){
+    ms_Water.material.uniforms.rippleX.value = params.RippleX;
+  });
+  gui.add(params, 'RippleY').min(0).max(10).step(0.5).onChange(function(){
+    ms_Water.material.uniforms.rippleY.value = params.RippleY;
+  });
+
   var meshMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color(1, 1, 1), wireframe: false });
   sphere = new THREE.Mesh( new THREE.SphereGeometry( 200, 200, 64 ), meshMaterial );
   sphere.position.set(0, 800, 0);
   scene.add( sphere );
+
+  var axesHelper = new THREE.AxesHelper( width );
+  scene.add( axesHelper );
 
   window.addEventListener('resize', onWindowResize, false);
   animate();
@@ -110,13 +153,16 @@ function animate() {
   var elapsedTime = time.getElapsedTime();
   requestAnimationFrame(animate);
   scene.updateMatrixWorld();
-
   ms_Water.render();
   ms_Water.material.uniforms.u_time.value += deltaTime;
 
   var timer = Date.now() * 0.0005;
+  var x = Math.abs(Math.sin(timer))*50;
 
-  sphere.position.y = Math.abs(Math.sin(timer)) * 1000;
+  sphere.position.y = (3*x*x - 2*x*x + 500)/4;
+  sphere.position.x = Math.cos(timer)*1000;
+  sphere.position.z = Math.sin(timer)*1000;
+
   //sphere.position.z = Math.cos(timer) * 1000;
 
   sphere.material.color = new THREE.Color(Math.sin(deltaTime), Math.cos(deltaTime), 1);
