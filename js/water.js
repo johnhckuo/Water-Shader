@@ -21,11 +21,11 @@ THREE.ShaderLib['water'] = {
       "sunDirection":     { type: "v3", value: new THREE.Vector3(0.70707, 0.70707, 0) },
       "eye":              { type: "v3", value: new THREE.Vector3(0, 0, 0) },
       "waterColor":       { type: "c", value: new THREE.Color(0x555555) },
-      "gridNumber" :   { type: "f", value: 20.0 },
-      "waveX":         { type: "f", value: 1.0 },
-      "waveY":     { type: "f", value: 2.0 },
-      "rippleX":              { type: "f", value: 3.0 },
-      "rippleY":       { type: "f", value: 5.0 }
+      "gridNumber" :   { type: "f", value: 0.0 },
+      "waveX":         { type: "f", value: 0.0 },
+      "waveY":     { type: "f", value: 0.0 },
+      "rippleX":       { type: "f", value: 0.0 },
+      "rippleY":       { type: "f", value: 0.0 }
     }
   ] ),
 
@@ -160,14 +160,8 @@ THREE.ShaderLib['water'] = {
     'vec3 pos = vec3(st.x*rippleX, st.y*rippleY, u_time*0.4);',
     'noise = vec3(fbm(pos) + 1.0);',
 
-    'vec3 wave_pos = vec3(st.x*waveX , st.y*waveY + (u_time/2.0), u_time*0.3);',
+    'vec3 wave_pos = vec3(st.x*waveX , st.y*waveY + (u_time/1.5), u_time*0.3);',
     'noise *= vec3(fbm(wave_pos)*1.5 + 0.5);',
-
-    // 'vec3 wave_pos2 = vec3(st.x*3.0 + (u_time/2.0) , st.y*5.0 + (u_time/2.0), u_time*0.3);',
-    // 'noise *= vec3(getNoise(wave_pos2) + 1.0);',
-
-    // 'vec3 wave_pos = vec3(st.x*2.0 , st.y*4.0 + (u_time/2.0), u_time*0.3);',
-    // 'noise *= vec3(getNoise(wave_pos) + 2.0);',
 
     'vec3 distortCoord = noise.x * surfaceX + noise.y * surfaceY;',
     'vec3 distortNormal = distortCoord + surfaceZ;',
@@ -228,8 +222,8 @@ THREE.Water = function (renderer, camera, scene, options) {
   this.noiseScale = optionalParameter(options.noiseScale, 1.0);
   this.side = optionalParameter(options.side, THREE.FrontSide);
   this.gridNumber = optionalParameter(options.gridNumber, 20.0);
-  this.waveX = optionalParameter(options.waveX, 1.0);
-  this.waveY = optionalParameter(options.waveY, 2.0);
+  this.waveX = optionalParameter(options.waveX, 0.5);
+  this.waveY = optionalParameter(options.waveY, 1.5);
   this.rippleX = optionalParameter(options.rippleX, 3.0);
   this.rippleY = optionalParameter(options.rippleY, 5.0);
   // this.fog = optionalParameter(options.fog, false);
@@ -282,6 +276,11 @@ THREE.Water = function (renderer, camera, scene, options) {
   this.material.uniforms.sunDirection.value = this.sunDirection;
   this.material.uniforms.distortionScale.value = this.distortionScale;
   this.material.uniforms.noiseScale.value = this.noiseScale;
+  this.material.uniforms.waveX.value = this.waveX;
+  this.material.uniforms.waveY.value = this.waveY;
+  this.material.uniforms.rippleX.value = this.rippleX;
+  this.material.uniforms.rippleY.value = this.rippleY;
+  this.material.uniforms.gridNumber.value = this.gridNumber;
   
   this.material.uniforms.eye.value = this.eye;
   

@@ -12,7 +12,8 @@ var land_frequency = 7;
 var land_vertex = 64;
 var smoothingFactor = 500, boundaryHeight = 50;
 var ms_Water;
-
+var waveX = 0.5, waveY = 1.5, rippleX = 1, rippleY = 2;
+var gridNumber = 20;
 
 init();
 
@@ -33,10 +34,6 @@ function init() {
 
   var directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position = light_source;
-
-  var helper = new THREE.DirectionalLightHelper( directionalLight, 500 );
-
-  scene.add( helper );
   scene.add(directionalLight);
 
   var plane_geometry = new THREE.PlaneBufferGeometry( width, height, 32, 32 );
@@ -50,7 +47,12 @@ function init() {
       sunColor: 0xffffff,
       waterColor: 0x001e0f,
       betaVersion: 0,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      gridNumber: gridNumber,
+      waveX: waveX,
+      waveY: waveY,
+      rippleX: rippleX,
+      rippleY: rippleY
   });
 
 
@@ -106,11 +108,11 @@ function init() {
 
   var params = {
       Wireframe : false,
-      WaveX : 1.0,
-      WaveY : 2.0,
-      RippleX : 3.0,
-      RippleY : 5.0,
-      Grid: 20.0
+      WaveX : waveX,
+      WaveY : waveY,
+      RippleX : rippleX,
+      RippleY : rippleY,
+      Grid: gridNumber
 
   };
 
@@ -136,14 +138,6 @@ function init() {
     ms_Water.material.uniforms.rippleY.value = params.RippleY;
   });
 
-  var meshMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color(1, 1, 1), wireframe: false });
-  sphere = new THREE.Mesh( new THREE.SphereGeometry( 200, 200, 64 ), meshMaterial );
-  sphere.position.set(0, 800, 0);
-  scene.add( sphere );
-
-  var axesHelper = new THREE.AxesHelper( width );
-  scene.add( axesHelper );
-
   window.addEventListener('resize', onWindowResize, false);
   animate();
 }
@@ -156,16 +150,6 @@ function animate() {
   ms_Water.render();
   ms_Water.material.uniforms.u_time.value += deltaTime;
 
-  var timer = Date.now() * 0.0005;
-  var x = Math.abs(Math.sin(timer))*50;
-
-  sphere.position.y = (3*x*x - 2*x*x + 500)/4;
-  sphere.position.x = Math.cos(timer)*1000;
-  sphere.position.z = Math.sin(timer)*1000;
-
-  //sphere.position.z = Math.cos(timer) * 1000;
-
-  sphere.material.color = new THREE.Color(Math.sin(deltaTime), Math.cos(deltaTime), 1);
   renderer.render(scene, camera);
   controls.update();
 
